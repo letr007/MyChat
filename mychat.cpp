@@ -34,6 +34,8 @@ MyChat::MyChat(QWidget *parent)
 MyChat::~MyChat()
 {
     delete ui;
+    socket->sendTextMessage("ACT:PUSH:LOGOUT:username:" + this->username);
+    socket->close();
     socket->deleteLater();
 }
 
@@ -53,7 +55,7 @@ void MyChat::onConnected()
 void MyChat::onTextMessageReceived(const QString &message)
 {
     // 显示接收到的消息
-    //ui->textMessageReceived->append("Server: " + message);
+    ui->textMessageReceived->append("Server: " + message);
     QStringList list = message.split(":");
     if (list[0] == "ACT")
     {
@@ -61,6 +63,7 @@ void MyChat::onTextMessageReceived(const QString &message)
         {
             if (list[2] == "MEMBERS")
             {
+                ui->serverMembersList->clear();
                 QStringList members = list[3].split("|");
                 for (int i = 0; i < members.length(); i++)
                 {
@@ -70,6 +73,15 @@ void MyChat::onTextMessageReceived(const QString &message)
             if (list[2] == "SERVERNAME")
             {
                 ui->label_ServerName->setText(list[3]);
+            }
+        }
+        if (list[1] == "PUSH")
+        {
+            if (list[2] == "UPDATE_MEMBER")
+            {
+                // 重新拉取成员列表
+                socket->sendTextMessage("ACT:PULL:MEMBERS");
+                qDebug() << "Update members list";
             }
         }
     }
